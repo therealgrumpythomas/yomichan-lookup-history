@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@1.*/css/pico.min.css">
+    <title>Yomichan lookup history</title>
+</head>
+
+<body>
+    <main class="container">
+        <div id="app">
+            <table>
+                <thead>
+                    <th>term</th>
+                    <th>amount</th>
+                </thead>
+                <tbody>
+                    <tr v-for="item in mostLookups">
+                        <td>{{item.text}}</td>
+                        <td>{{item.amount}}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+    </main>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.2.47/vue.global.min.js"
+        integrity="sha512-DJ2+sosWB5FnZAIeCWAHu2gxQ7Gi438oOZLcBQSOrW8gD0s7LIXDv/5RW76B3FcljF40BXnfqNIo6Dhp7dFHJg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        const { createApp } = Vue
+
+        createApp({
+            data() {
+                return {
+                    isHydrated: false,
+                    lookups: [],
+                    mostLookups: []
+                }
+            },
+            mounted() {
+                window.hydrate = (function (data) {
+                    // only hydrate once
+                    if (this.isHydrated) {
+                        return;
+                    }
+
+                    this.isHydrated = true;
+                    this.lookups = data.lookups;
+                    let mostLookups = data.lookups.reduce((acc, lookup) => {
+                        const index = acc.findIndex(l => l.text === lookup.text);
+                        if (index === -1) {
+                            acc.push({
+                                text: lookup.text,
+                                amount: 1
+                            });
+                        } else {
+                            acc[index].amount++;
+                        }
+
+                        return acc;
+                    }, []);
+                    mostLookups.sort((a, b) =>{
+                        if (a.amount > b.amount) {
+                            return -1;
+                        }
+
+                        if (a.amount < b.amount) {
+                            return 1;
+                        }
+
+                        return 0;
+                    });
+                    this.mostLookups = mostLookups.slice(0, 100);
+                }).bind(this);
+            }
+        }).mount('#app')
+    </script>
+</body>
+
+</html>

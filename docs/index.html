@@ -12,13 +12,32 @@
 <body>
     <main class="container">
         <div id="app">
+            <div class="header">
+                <input autofocus type="search" id="search" name="search" placeholder="Search"
+                    v-model.trim="searchQuery">
+
+                <details>
+                    <summary>More filter options</summary>
+                    <label for="source">Source</label>
+                    <select id="source" value="" v-model="searchSource">
+                        <option value="" selected="selected">All</option>
+                        <option :value="source.label" v-for="source in sources">{{source.label}}</option>
+                    </select>
+                </details>
+            </div>
             <table>
                 <thead>
                     <th>term</th>
                     <th>amount</th>
                 </thead>
-                <tbody>
-                    <tr v-for="item in mostLookups">
+                <tbody v-if="searchSource.length > 0 || searchQuery.length > 0">
+                    <tr v-for="item in filteredItems">
+                        <td>{{item.text}}</td>
+                        <td>{{item.amount}}</td>
+                    </tr>
+                </tbody>
+                <tbody v-else>
+                    <tr v-for="item in lookups">
                         <td>{{item.text}}</td>
                         <td>{{item.amount}}</td>
                     </tr>
@@ -40,7 +59,32 @@
                 return {
                     isHydrated: false,
                     lookups: [],
-                    mostLookups: []
+                    searchResults: [],
+                    searchQuery: '',
+                    sources: [],
+                    searchSource: ''
+                }
+            },
+            computed: {
+                filteredItems() {
+                    const doSearchSource = this.searchSource.length > 0;
+                    const doSearchQuery = this.searchQuery.length > 0;
+                    if (!doSearchSource && !doSearchQuery) {
+                        return [];
+                    }
+
+                    return this.lookups.filter((lookup) => {
+                        let isMatch = false;
+                        if (doSearchSource) {
+                            isMatch = lookup.sources.has(this.searchSource);
+                        }
+
+                        if (doSearchQuery && isMatch) {
+                            isMatch = lookup.text.indexOf(this.searchQuery) > -1
+                        }
+
+                        return isMatch;
+                    });
                 }
             },
             mounted() {
@@ -49,23 +93,26 @@
                     if (this.isHydrated) {
                         return;
                     }
-
                     this.isHydrated = true;
-                    this.lookups = data.lookups;
-                    let mostLookups = data.lookups.reduce((acc, lookup) => {
+                    this.sources = data.sources;
+                    let groupedLookups = data.lookups.reduce((acc, lookup) => {
                         const index = acc.findIndex(l => l.text === lookup.text);
+                        const source = data.sources[lookup.sourceId]?.label;
                         if (index === -1) {
                             acc.push({
                                 text: lookup.text,
-                                amount: 1
+                                amount: 1,
+                                sources: new Set([source])
                             });
                         } else {
                             acc[index].amount++;
+                            acc[index].sources.add(source)
                         }
 
                         return acc;
                     }, []);
-                    mostLookups.sort((a, b) =>{
+                    console.log(groupedLookups);
+                    groupedLookups.sort((a, b) => {
                         if (a.amount > b.amount) {
                             return -1;
                         }
@@ -76,7 +123,7 @@
 
                         return 0;
                     });
-                    this.mostLookups = mostLookups.slice(0, 100);
+                    this.lookups = groupedLookups.slice(0, 1000);
                 }).bind(this);
             }
         }).mount('#app')

@@ -77,9 +77,12 @@
                         let isMatch = false;
                         if (doSearchSource) {
                             isMatch = lookup.sources.has(this.searchSource);
+                            if (!isMatch) {
+                                return;
+                            }
                         }
 
-                        if (doSearchQuery && isMatch) {
+                        if (doSearchQuery) {
                             isMatch = lookup.text.indexOf(this.searchQuery) > -1
                         }
 

@@ -199,7 +199,7 @@
                             acc.push({
                                 text: lookup.text,
                                 amount: 1,
-                                sources: source ? new Set([source]) : new Set([]),
+                                sources: (source || '').trim().length > 0 ? new Set([source]) : new Set([]),
                                 creationDates: [lookup.created]
                             });
                         } else {

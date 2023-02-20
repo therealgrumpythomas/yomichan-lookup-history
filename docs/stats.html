@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@1.*/css/pico.min.css">
+    <title>yomichan lookup stats</title>
+    <style>
+        #chart {
+            height: 100vh;
+            width: 100vw;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <canvas id="chart"></canvas>
+    </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.2.1/chart.umd.min.js"
+        integrity="sha512-GCiwmzA0bNGVsp1otzTJ4LWQT2jjGJENLGyLlerlzckNI30moi2EQT0AfRI7fLYYYDKR+7hnuh35r3y1uJzugw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@^2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@^1"></script>
+    <script>
+        (function () {
+            let isHydrated = false
+            window.hydrate = function (data) {
+                if (isHydrated) {
+                    return;
+                }
+
+                isHydrated = true;
+                const now = new Date();
+                const datasets = data.lookups.reduce((acc, lookup) => {
+                    const difference = diffDatesInDays(now, new Date()) * -1;
+                    if (!acc.datasets[lookup.sourceId]) {
+                        acc.datasets[lookup.sourceId] = {
+                            label: lookup.sourceId,
+                            data: []
+                        };
+                    }
+
+                    const index = acc.datasets[lookup.sourceId].data.findIndex((d) => {
+                        return d.label === lookup.text && d.x === difference;
+                    });
+
+                    if (index === -1) {
+                        acc.datasets[lookup.sourceId].data.push({
+                            label: lookup.text,
+                            y: 1,
+                            x: difference
+                        });
+                    } else {
+                        console.log('lookup', lookup);
+
+                        acc.datasets[lookup.sourceId].data[index].y++;
+                    }
+
+                    return acc;
+                }, { datasets: {} });
+
+                console.log(Object.values(datasets.datasets));
+                new Chart(document.getElementById('chart'), {
+                    type: 'scatter',
+                    data: {
+                        datasets: Object.values(datasets.datasets)
+                    },
+                    options: {
+                        responsive: true,
+                        showLine: false,
+                        tooltips: {
+                            plugins: {
+                                callbacks: {
+                                    label: function (context) {
+                                        let label = context.dataset.label || '';
+
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                // Luxon format string
+                                tooltipFormat: 'DD T'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'value'
+                            }
+                        }
+                    }
+                });
+            };
+        })();
+
+        function diffDatesInDays(date1, date2) {
+            const diffTime = Math.abs(date2 - date1);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays;
+        }
+    </script>
+</body>
+
+</html>

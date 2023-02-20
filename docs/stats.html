@@ -36,15 +36,21 @@
                     return;
                 }
 
-                document.getElementById('dump').innerHTML = JSON.stringify({"yomichan-lookup-history": JSON.stringify(data)});
+                document.getElementById('dump').innerHTML = JSON.stringify({ "yomichan-lookup-history": JSON.stringify(data) });
 
                 isHydrated = true;
                 const now = new Date();
+                console.log(data);
                 const datasets = data.lookups.reduce((acc, lookup) => {
-                    const difference = diffDatesInDays(now, new Date()) * -1;
+                    const difference = diffDatesInDays(now, new Date(lookup.created)) * -1 + 1;
                     if (!acc.datasets[lookup.sourceId]) {
+                        const label = data.sources[lookup.sourceId]?.label || '';
+                        if (label.trim().length === 0) {
+                            return acc;
+                        }
+
                         acc.datasets[lookup.sourceId] = {
-                            label: lookup.sourceId,
+                            label: label,
                             data: []
                         };
                     }
@@ -60,55 +66,73 @@
                             x: difference
                         });
                     } else {
-                        console.log('lookup', lookup);
-
                         acc.datasets[lookup.sourceId].data[index].y++;
                     }
 
                     return acc;
                 }, { datasets: {} });
 
-                console.log(Object.values(datasets.datasets));
+                const sizes = Object.values(datasets.datasets).map(set => set.data.length);
+                const maxSize = Math.max(...sizes);
+
                 new Chart(document.getElementById('chart'), {
                     type: 'scatter',
                     data: {
                         datasets: Object.values(datasets.datasets)
                     },
                     options: {
-                        tooltips: {
-                            plugins: {
-                                callbacks: {
-                                    label: function (context) {
-                                        let label = context.dataset.label || '';
+                        responsive: true,
+                        elements: {
+                            point: {
+                                pointHoverRadius: (ctx) => {
+                                    const current = ctx.dataset.data.length;
+                                    const { x, y } = ctx.raw;
+                                    const c = ctx.dataset.data.reduce((acc, d) => {
+                                        if (d.x === x && d.y === y) {
+                                            return acc + 1;
+                                        }
+                                        return acc;
+                                    }, 0);
 
-                                        if (label) {
-                                            label += ': ';
+                                    return Math.max(Math.floor((c / maxSize) * 40), 5);
+                                },
+                                radius: (ctx) => {
+                                    const current = ctx.dataset.data.length;
+                                    const { x, y } = ctx.raw;
+                                    const c = ctx.dataset.data.reduce((acc, d) => {
+                                        if (d.x === x && d.y === y) {
+                                            return acc + 1;
                                         }
-                                        if (context.parsed.y !== null) {
-                                            label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
-                                        }
-                                        return label;
-                                    }
+                                        return acc;
+                                    }, 0);
+
+                                    return Math.max(Math.floor((c / maxSize) * 40), 5);
                                 }
                             }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            type: 'time',
-                            time: {
-                                // Luxon format string
-                                tooltipFormat: 'DD T'
+                        },
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                position: 'bottom',
+                                ticks: {
+                                    beginAtZero: false,
+                                    stepSize: 1
+                                }
                             },
-                            title: {
-                                display: true,
-                                text: 'Date'
+                            y: {
+                                ticks: {
+                                    beginAtZero: false,
+                                    stepSize: 1
+                                }
                             }
                         },
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'value'
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return `${context.raw.label}: ${context.raw.y}`;
+                                    }
+                                }
                             }
                         }
                     }

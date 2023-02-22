@@ -104,12 +104,17 @@
                     searchQuery: '',
                     sources: [],
                     searchSource: '',
-                    searchDate: '',
+                    searchDate: 'week',
                     dateValues: [
                         {
                             label: 'Last day',
                             value: 'day',
                             days: 1
+                        },
+                        {
+                            label: 'Last week',
+                            value: 'week',
+                            days: 7
                         },
                         {
                             label: 'Last month',
@@ -173,7 +178,7 @@
                         minimumDate = now.setDate(now.getDate() - selectedDateSearch.days);
                     }
 
-                    return this.lookups.filter((lookup) => {
+                    const filteredLookups = this.lookups.filter((lookup) => {
                         let isMatch = false;
                         if (doSearchSource) {
                             isMatch = lookup.sources.has(this.searchSource);
@@ -195,6 +200,9 @@
 
                         return isMatch;
                     });
+
+                    filteredLookups.sort(sortLookups);
+                    return filteredLookups;
                 }
             },
             mounted() {
@@ -223,21 +231,23 @@
 
                         return acc;
                     }, []);
-                    groupedLookups.sort((a, b) => {
-                        if (a.amount > b.amount) {
-                            return -1;
-                        }
-
-                        if (a.amount < b.amount) {
-                            return 1;
-                        }
-
-                        return 0;
-                    });
+                    groupedLookups.sort(sortLookups);
                     this.lookups = groupedLookups.slice(0, 1000);
                 }).bind(this);
             }
-        }).mount('#app')
+        }).mount('#app');
+
+        function sortLookups(a, b) {
+            if (a.amount > b.amount) {
+                return -1;
+            }
+
+            if (a.amount < b.amount) {
+                return 1;
+            }
+
+            return 0;
+        }
     </script>
 </body>
 

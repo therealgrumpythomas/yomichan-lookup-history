@@ -46,7 +46,10 @@
 
                 <details>
                     <summary>actions</summary>
-                    <button class="secondary" @click="deleteData">Clear all data</button>
+                    <div><button class="secondary" @click="optimizeData">Optimize data</button></div>
+                    <div>
+                        <button class="secondary" @click="deleteData">Clear all data</button>
+                    </div>
                 </details>
             </div>
             <div v-if="!lookups || lookups.length === 0">
@@ -122,6 +125,16 @@
                 }
             },
             methods: {
+                optimizeData() {
+                    if (confirm('Optimization will delete records it may deem useless. Are you sure you want to continue?')) {
+                        window.postMessage('optimizeYomichanHistory');
+                    }
+                },
+                deleteItem(item) {
+                    if (confirm(`Delete all entries with the text ${item.text}?`)) {
+                        window.postMessage(`deleteYomichanHistoryItem:${item.text}`, item.text);
+                    }
+                },
                 deleteData() {
                     if (confirm('This action will delete the entire lookup history. Are you sure?')) {
                         window.postMessage('resetYomichanHistory');

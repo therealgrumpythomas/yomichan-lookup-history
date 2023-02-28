@@ -67,6 +67,7 @@
                             <li v-for="source in selectedItem.sources">{{source}}</li>
                         </ul>
                     </div>
+                    <button @click="lookup(selectedItem)" class="secondary">normalize using jpdb</button>
                     <button @click="deleteItem(selectedItem)" class="secondary">delete</button>
                 </div>
             </div>
@@ -131,6 +132,7 @@
                     sources: [],
                     searchSource: '',
                     searchDate: 'week',
+                    jpdbToken: null,
                     dateValues: [
                         {
                             label: 'Last day',
@@ -169,6 +171,29 @@
                         this.lookups = this.lookups.filter((l) => l.text !== item.text);
                         this.deselectItem();
                     }
+                },
+                lookup(item) {
+                    if (!this.jpdbToken) {
+                        this.jpdbToken = prompt('input jpdb token');
+                    }
+                    body = {
+                        text: item.text,
+                        token_fields: ['vocabulary_index'],
+                        vocabulary_fields: ['spelling']
+                    };
+                    fetch("https://jpdb.io/api/v1/parse", {
+                        body: JSON.stringify(body),
+                        headers: {
+                            Authorization: `Bearer ${this.jpdbToken}`
+                        },
+                        method: "POST"
+                    }).then(r => r.json()).then(body => {
+                        const normalized = body.vocabulary.join('');
+                        if (confirm(`normalize to "${normalized}"?`)) {
+                            window.postMessage(`normalizeYomichanHistory:--${item.text}--++${normalized}++`);
+                            this.selectedItem.text = normalized;
+                        }
+                    })
                 },
                 deleteData() {
                     if (confirm('This action will delete the entire lookup history. Are you sure?')) {

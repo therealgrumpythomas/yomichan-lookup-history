@@ -19,60 +19,97 @@
         .col-8 {
             flex: 8;
         }
+
+        .card-grid {
+            display: grid;
+            overflow: hidden;
+            padding: 8px;
+            grid-template-columns: repeat(3, 1fr);
+            grid-auto-rows: 1fr;
+            grid-column-gap: 8px;
+            grid-row-gap: 8px;
+        }
+
+        .card-grid-item {
+            transition: outline .6s;
+            outline: 0 none transparent;
+            display: flex;
+            padding: 0.5em;
+            background: var(--card-background-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-box-shadow);
+            border-bottom: var(--border-width) solid var(--card-border-color);
+            cursor: pointer;
+        }
+
+        .card-grid-item:hover {
+            outline: 4px solid var(--card-sectionning-background-color);
+        }
+
+        .card-grid-item-contents {
+            width: 100%;
+        }
     </style>
 </head>
 
 <body>
     <main class="container">
         <div id="app">
-            <div class="header">
-                <div class="custom-grid">
-                    <input class="col-8" autofocus type="search" id="search" name="search" placeholder="Search"
-                        v-model.trim="searchQuery">
-                    <select class="col-4" value="" v-model="searchDate">
-                        <option :value="dateValue.value" v-for="dateValue in dateValues">{{dateValue.label}}</option>
-                    </select>
-                </div>
-
-                <details>
-                    <summary>More filter options</summary>
-                    <label for="source">Source</label>
-                    <select id="source" value="" v-model="searchSource">
-                        <option value="" selected="selected">All</option>
-                        <option :value="source.label" v-for="source in sources">{{source.label}}</option>
-                    </select>
-                </details>
-
-                <details>
-                    <summary>actions</summary>
-                    <div><button class="secondary" @click="optimizeData">Optimize data</button></div>
+            <div v-if="selectedItem">
+                <div>
                     <div>
-                        <button class="secondary" @click="deleteData">Clear all data</button>
+                        <button class="secondary outline" @click="deselectItem">back</button>
                     </div>
-                </details>
+                    <h1>{{selectedItem.text}}</h1>
+                    <h2>sources</h2>
+                    <div>
+                        <ul>
+                            <li v-for="source in selectedItem.sources">{{source}}</li>
+                        </ul>
+                    </div>
+                    <button @click="deleteItem(selectedItem)" class="secondary">delete</button>
+                </div>
             </div>
-            <div v-if="!lookups || lookups.length === 0">
-                No history found. Please do some lookups and refresh this page.
-            </div>
-            <table v-else>
-                <thead>
-                    <th>term</th>
-                    <th>amount</th>
-                    <th>sources</th>
-                </thead>
-                <tbody>
-                    <tr v-for="item in filteredItems">
-                        <td>{{item.text}}</td>
-                        <td>{{item.amount}}</td>
-                        <td>
-                            <ul>
-                                <li v-for="source in item.sources">{{source}}</li>
-                            </ul>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <div v-else>
 
+                <div class="header">
+                    <div class="custom-grid">
+                        <input class="col-8" autofocus type="search" id="search" name="search" placeholder="Search"
+                            v-model.trim="searchQuery">
+                        <select class="col-4" value="" v-model="searchDate">
+                            <option :value="dateValue.value" v-for="dateValue in dateValues">{{dateValue.label}}
+                            </option>
+                        </select>
+                    </div>
+
+                    <details>
+                        <summary>More filter options</summary>
+                        <label for="source">Source</label>
+                        <select id="source" value="" v-model="searchSource">
+                            <option value="" selected="selected">All</option>
+                            <option :value="source.label" v-for="source in sources">{{source.label}}</option>
+                        </select>
+                    </details>
+
+                    <details>
+                        <summary>actions</summary>
+                        <div><button class="secondary" @click="optimizeData">Optimize data</button></div>
+                        <div>
+                            <button class="secondary" @click="deleteData">Clear all data</button>
+                        </div>
+                    </details>
+                </div>
+                <div v-if="!lookups || lookups.length === 0">
+                    No history found. Please do some lookups and refresh this page.
+                </div>
+                <div class="card-grid" v-else>
+                    <div class="card-grid-item" @click="showDetails(item)" v-for="item in filteredItems">
+                        <div class="card-grid-item-contents">
+                            <div>{{item.text}}: {{item.amount}}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -88,6 +125,7 @@
                 return {
                     isHydrated: false,
                     lookups: [],
+                    selectedItem: null,
                     searchResults: [],
                     searchQuery: '',
                     sources: [],
@@ -125,7 +163,11 @@
                 },
                 deleteItem(item) {
                     if (confirm(`Delete all entries with the text ${item.text}?`)) {
-                        window.postMessage(`deleteYomichanHistoryItem:${item.text}`, item.text);
+                        window.postMessage(`deleteYomichanHistoryItem:${item.text}`);
+                        // ugly workaround, should implement some listener
+
+                        this.lookups = this.lookups.filter((l) => l.text !== item.text);
+                        this.deselectItem();
                     }
                 },
                 deleteData() {
@@ -133,6 +175,12 @@
                         window.postMessage('resetYomichanHistory');
                         this.lookups = [];
                     }
+                },
+                showDetails(item) {
+                    this.selectedItem = item;
+                },
+                deselectItem() {
+                    this.selectedItem = null;
                 }
             },
             computed: {

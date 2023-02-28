@@ -30,7 +30,6 @@
                     <input class="col-8" autofocus type="search" id="search" name="search" placeholder="Search"
                         v-model.trim="searchQuery">
                     <select class="col-4" value="" v-model="searchDate">
-                        <option value="">All time</option>
                         <option :value="dateValue.value" v-for="dateValue in dateValues">{{dateValue.label}}</option>
                     </select>
                 </div>
@@ -61,19 +60,8 @@
                     <th>amount</th>
                     <th>sources</th>
                 </thead>
-                <tbody v-if="searchSource.length > 0 || searchQuery.length > 0 || searchDate.length > 0">
+                <tbody>
                     <tr v-for="item in filteredItems">
-                        <td>{{item.text}}</td>
-                        <td>{{searchResultAmount(item)}}</td>
-                        <td>
-                            <ul>
-                                <li v-for="source in item.sources">{{source}}</li>
-                            </ul>
-                        </td>
-                    </tr>
-                </tbody>
-                <tbody v-else>
-                    <tr v-for="item in lookups">
                         <td>{{item.text}}</td>
                         <td>{{item.amount}}</td>
                         <td>
@@ -145,22 +133,7 @@
                         window.postMessage('resetYomichanHistory');
                         this.lookups = [];
                     }
-                },
-                searchResultAmount(lookup) {
-                    if (this.searchDate.length > 0) {
-                        const now = new Date();
-                        const selectedDateSearch = this.dateValues.find(d => d.value === this.searchDate);
-                        const minimumDate = now.setDate(now.getDate() - selectedDateSearch.days);
-                        return lookup.creationDates.reduce((acc, date) => {
-                            if (date >= minimumDate) {
-                                return acc + 1;
-                            }
-                            return acc;
-                        }, 0);
-                    }
-
-                    return lookup.amount;
-                },
+                }
             },
             computed: {
                 filteredItems() {
@@ -178,28 +151,44 @@
                         minimumDate = now.setDate(now.getDate() - selectedDateSearch.days);
                     }
 
-                    const filteredLookups = this.lookups.filter((lookup) => {
+                    const filteredLookups = this.lookups.reduce((acc, lookup) => {
                         let isMatch = false;
                         if (doSearchSource) {
                             isMatch = lookup.sources.has(this.searchSource);
                             if (!isMatch) {
-                                return false;
+                                return acc;
                             }
                         }
 
                         if (doSearchDate) {
                             isMatch = lookup.creationDates.find((d) => d >= minimumDate);
                             if (!isMatch) {
-                                return false;
+                                return acc;
                             }
                         }
 
                         if (doSearchQuery) {
-                            isMatch = lookup.text.indexOf(this.searchQuery) > -1
+                            isMatch = lookup.text.indexOf(this.searchQuery) > -1;
+                            if (!isMatch) {
+                                return acc;
+                            }
                         }
 
-                        return isMatch;
-                    });
+                        if (isMatch) {
+                            const now = new Date();
+                            const selectedDateSearch = this.dateValues.find(d => d.value === this.searchDate);
+                            const minimumDate = now.setDate(now.getDate() - selectedDateSearch.days);
+                            lookup.amount = lookup.creationDates.reduce((sum, date) => {
+                                if (date >= minimumDate) {
+                                    return sum + 1;
+                                }
+                                return sum;
+                            }, 0);
+                            acc.push(lookup);
+                        }
+
+                        return acc;
+                    }, []);
 
                     filteredLookups.sort(sortLookups);
                     return filteredLookups;

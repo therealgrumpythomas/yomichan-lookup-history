@@ -9,18 +9,7 @@
     <title>Yomichan lookup history</title>
     <style>
         :root {
-            --font-family: jpSerif;
-        }
-
-        @font-face {
-            font-family: jpSerif;
-            src: url(public/NotoSerifJP-Regular.otf);
-        }
-
-        @font-face {
-            font-family: jpSerif;
-            src: url(public/NotoSerifJP-Bold.otf);
-            font-weight: bold;
+            --font-family: "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", "Yu Gothic", Osaka, メイリオ, Meiryo, "ＭＳ Ｐゴシック", "MS PGothic", sans-serif;
         }
 
         .custom-grid {
@@ -78,29 +67,42 @@
             <div v-if="selectedItem">
                 <div>
                     <div>
-                        <button class="secondary outline" @click="deselectItem">back</button>
+                        <button class="secondary outline" @click="deselectItem">Back</button>
                     </div>
-                    <h1>{{selectedItem.text}}</h1>
-                    <h2>sources</h2>
-                    <div>
+                    <article id="example-sentences">
+                        <hgroup>
+                            <h2>{{selectedItem.text}}</h2>
+                            <h3 aria-busy="true" v-if="isExampleSentencesLoading"></h3>
+                            <h3 v-else-if="exampleSentences && exampleSentences[0]" v-html="exampleSentences[0].markup"></h3>
+                            <h3 v-else>No example sentences found</h3>
+                        </hgroup>
+
+                        <div>
+                            <details v-show="isExampleSentencesLoading || exampleSentences?.length > 0">
+                                <summary v-if="!isExampleSentencesLoading && exampleSentences?.length > 0">show more examples</summary>
+                                <summary v-else>Loading example sentences…</summary>
+                                <ul>
+                                    <li v-for="sentence in exampleSentences.slice(1, 10)" id="example-sentences">
+                                        <div v-html="sentence.markup"></div>
+                                    </li>
+                                </ul>
+                            </details>
+                        </div>
+                    </article>
+
+                    <article>
+                        <h2>Sources</h2>
                         <ul>
                             <li v-for="source in selectedItem.sources">{{source}}</li>
                         </ul>
-                    </div>
-                    <h2>example sentences</h2>
-                    <div>
-                        <ul>
-                            <li v-for="sentence in exampleSentences" id="example-sentences">
-                                <div v-html="sentence.markup"></div>
-                            </li>
-                        </ul>
-                    </div>
-                    <button @click="lookup(selectedItem)" class="secondary">normalize using jpdb</button>
-                    <button @click="deleteItem(selectedItem)" class="secondary">delete</button>
+                    </article>
+
+
+                    <button @click="lookup(selectedItem)" class="secondary">Normalize using jpdb</button>
+                    <button @click="deleteItem(selectedItem)" class="secondary">Delete</button>
                 </div>
             </div>
             <div v-else>
-
                 <div class="header">
                     <div class="custom-grid">
                         <input class="col-8" autofocus type="search" id="search" name="search" placeholder="Search"
@@ -121,7 +123,7 @@
                     </details>
 
                     <details>
-                        <summary>actions</summary>
+                        <summary>Actions</summary>
                         <div><button class="secondary" @click="optimizeData">Optimize data</button></div>
                         <div>
                             <button class="secondary" @click="deleteData">Clear all data</button>
@@ -161,6 +163,7 @@
                     searchQuery: '',
                     sources: [],
                     exampleSentences: [],
+                    isExampleSentencesLoading: false,
                     searchSource: '',
                     searchDate: 'week',
                     jpdbToken: null,
@@ -251,17 +254,23 @@
                     }
                 },
                 async showDetails(item) {
-                    this.selectedItem = item;
-                    const example = await this.findExampleSentences(item);
-                    console.log(example);
-                    // check because the selected item may have changed
-                    if (example.text === this.selectedItem.text) {
-                        this.exampleSentences = example.sentences;
+                    try {
+                        this.isExampleSentencesLoading = true;
+                        this.selectedItem = item;
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        const example = await this.findExampleSentences(item);
+                        // check because the selected item may have changed
+                        if (example.text === this.selectedItem.text) {
+                            this.exampleSentences = example.sentences;
+                        }
+                    } finally {
+                        this.isExampleSentencesLoading = false
                     }
                 },
                 deselectItem() {
                     this.selectedItem = null;
                     this.exampleSentences = [];
+                    this.isExampleSentencesLoading = false;
                 }
             },
             computed: {

@@ -1,0 +1,50 @@
+:root {
+  --font-family: "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", "Yu Gothic", Osaka, メイリオ, Meiryo, "ＭＳ Ｐゴシック", "MS PGothic", sans-serif;
+}
+
+.custom-grid {
+  display: flex;
+}
+
+.col-4 {
+  flex: 4;
+}
+
+.col-8 {
+  flex: 8;
+}
+
+.card-grid {
+  display: grid;
+  overflow: hidden;
+  padding: 8px;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 1fr;
+  grid-column-gap: 8px;
+  grid-row-gap: 8px;
+}
+
+.card-grid-item {
+  transition: outline .6s;
+  outline: 0 none transparent;
+  display: flex;
+  padding: 0.5em;
+  background: var(--card-background-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-box-shadow);
+  border-bottom: var(--border-width) solid var(--card-border-color);
+  cursor: pointer;
+}
+
+.card-grid-item:hover {
+  outline: 4px solid var(--card-sectionning-background-color);
+}
+
+.card-grid-item-contents {
+  width: 100%;
+}
+
+#example-sentences em {
+  font-weight: bold;
+  font-style: normal;
+}

@@ -68,14 +68,6 @@ function App() {
             });
           }} />
 
-        <details>
-          <summary>Actions</summary>
-          <div><button className='secondary'>Optimize data</button></div>
-          <div>
-            <button className='secondary'>Clear all data</button>
-          </div>
-        </details>
-
         <LookupOverview lookups={lookups} onClick={(item) => {
           setSelectedItem(item)
         }} />

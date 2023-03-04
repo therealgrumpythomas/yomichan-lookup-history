@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@1.*/css/pico.min.css">
+    <title>Yomichan lookup history</title>
+    <style>
+        :root {
+            --font-family: "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", "Yu Gothic", Osaka, メイリオ, Meiryo, "ＭＳ Ｐゴシック", "MS PGothic", sans-serif;
+        }
+
+        .custom-grid {
+            display: flex;
+        }
+
+        .col-4 {
+            flex: 4;
+        }
+
+        .col-8 {
+            flex: 8;
+        }
+
+        .card-grid {
+            display: grid;
+            overflow: hidden;
+            padding: 8px;
+            grid-template-columns: repeat(3, 1fr);
+            grid-auto-rows: 1fr;
+            grid-column-gap: 8px;
+            grid-row-gap: 8px;
+        }
+
+        .card-grid-item {
+            transition: outline .6s;
+            outline: 0 none transparent;
+            display: flex;
+            padding: 0.5em;
+            background: var(--card-background-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-box-shadow);
+            border-bottom: var(--border-width) solid var(--card-border-color);
+            cursor: pointer;
+        }
+
+        .card-grid-item:hover {
+            outline: 4px solid var(--card-sectionning-background-color);
+        }
+
+        .card-grid-item-contents {
+            width: 100%;
+        }
+
+        #example-sentences em {
+            font-weight: bold;
+            font-style: normal;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <div id="app">
+            <div v-if="selectedItem">
+                <div>
+                    <div>
+                        <button class="secondary outline" @click="deselectItem">Back</button>
+                    </div>
+                    <article id="example-sentences">
+                        <hgroup>
+                            <h2>{{selectedItem.text}}</h2>
+                            <h3 aria-busy="true" v-if="isExampleSentencesLoading"></h3>
+                            <h3 v-else-if="exampleSentences && exampleSentences[0]" v-html="exampleSentences[0].markup"></h3>
+                            <h3 v-else>No example sentences found</h3>
+                        </hgroup>
+
+                        <div>
+                            <details v-show="isExampleSentencesLoading || exampleSentences?.length > 0">
+                                <summary v-if="!isExampleSentencesLoading && exampleSentences?.length > 0">show more examples</summary>
+                                <summary v-else>Loading example sentences…</summary>
+                                <ul>
+                                    <li v-for="sentence in exampleSentences.slice(1, 10)" id="example-sentences">
+                                        <div v-html="sentence.markup"></div>
+                                    </li>
+                                </ul>
+                            </details>
+                        </div>
+                    </article>
+
+                    <article>
+                        <h2>Sources</h2>
+                        <ul>
+                            <li v-for="source in selectedItem.sources">{{source}}</li>
+                        </ul>
+                    </article>
+
+
+                    <button @click="lookup(selectedItem)" class="secondary">Normalize using jpdb</button>
+                    <button @click="deleteItem(selectedItem)" class="secondary">Delete</button>
+                </div>
+            </div>
+            <div v-else>
+                <div class="header">
+                    <div class="custom-grid">
+                        <input class="col-8" autofocus type="search" id="search" name="search" placeholder="Search"
+                            v-model.trim="searchQuery">
+                        <select class="col-4" value="" v-model="searchDate">
+                            <option :value="dateValue.value" v-for="dateValue in dateValues">{{dateValue.label}}
+                            </option>
+                        </select>
+                    </div>
+
+                    <details>
+                        <summary>More filter options</summary>
+                        <label for="source">Source</label>
+                        <select id="source" value="" v-model="searchSource">
+                            <option value="" selected="selected">All</option>
+                            <option :value="source.label" v-for="source in sources">{{source.label}}</option>
+                        </select>
+                    </details>
+
+                    <details>
+                        <summary>Actions</summary>
+                        <div><button class="secondary" @click="optimizeData">Optimize data</button></div>
+                        <div>
+                            <button class="secondary" @click="deleteData">Clear all data</button>
+                        </div>
+                    </details>
+                </div>
+                <div v-if="!lookups || lookups.length === 0">
+                    No history found. Please do some lookups and refresh this page.
+                </div>
+                <div class="card-grid" v-else>
+                    <div class="card-grid-item" @click="showDetails(item)" v-for="item in filteredItems">
+                        <div class="card-grid-item-contents">
+                            <div>{{item.text}}: {{item.amount}}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.1/purify.min.js"
+        integrity="sha512-TU4FJi5o+epsahLtM9OFRvH2gXmmlzGlysk9wtTFgbYbMvFzh3Cw1l3ubnYIvBiZCC/aurRHS408TeEbcuOoyQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.2.47/vue.global.min.js"
+        integrity="sha512-DJ2+sosWB5FnZAIeCWAHu2gxQ7Gi438oOZLcBQSOrW8gD0s7LIXDv/5RW76B3FcljF40BXnfqNIo6Dhp7dFHJg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        const { createApp } = Vue
+
+        createApp({
+            data() {
+                return {
+                    isHydrated: false,
+                    lookups: [],
+                    selectedItem: null,
+                    searchResults: [],
+                    searchQuery: '',
+                    sources: [],
+                    exampleSentences: [],
+                    isExampleSentencesLoading: false,
+                    searchSource: '',
+                    searchDate: 'week',
+                    jpdbToken: null,
+                    dateValues: [
+                        {
+                            label: 'Last day',
+                            value: 'day',
+                            days: 1
+                        },
+                        {
+                            label: 'Last week',
+                            value: 'week',
+                            days: 7
+                        },
+                        {
+                            label: 'Last month',
+                            value: 'month',
+                            days: 31
+                        },
+                        {
+                            label: 'Last year',
+                            value: 'year',
+                            days: 365
+                        },
+                    ]
+                }
+            },
+            methods: {
+                optimizeData() {
+                    if (confirm('Optimization will delete records it may deem useless. Are you sure you want to continue?')) {
+                        window.postMessage('optimizeYomichanHistory');
+                    }
+                },
+                deleteItem(item) {
+                    if (confirm(`Delete all entries with the text ${item.text}?`)) {
+                        window.postMessage(`deleteYomichanHistoryItem:${item.text}`);
+                        // ugly workaround, should implement some listener
+
+                        this.lookups = this.lookups.filter((l) => l.text !== item.text);
+                        this.deselectItem();
+                    }
+                },
+                async findExampleSentences(item) {
+                    const response = await fetch(`https://massif.la/ja/search?q=${item.text}&fmt=json`);
+                    const body = await response.json();
+                    return {
+                        text: item.text,
+                        sentences: body.results.slice(0, 10).reduce((acc, result) => {
+                            acc.push({
+                                source: {
+                                    title: result.sample_source.title,
+                                    url: result.sample_source.url
+                                },
+                                text: result.text,
+                                markup: DOMPurify.sanitize(result.highlighted_html)
+                            });
+                            return acc;
+                        }, [])
+                    };
+                },
+                lookup(item) {
+                    if (!this.jpdbToken) {
+                        this.jpdbToken = prompt('input jpdb token');
+                    }
+                    body = {
+                        text: item.text,
+                        token_fields: ['vocabulary_index'],
+                        vocabulary_fields: ['spelling']
+                    };
+                    fetch("https://jpdb.io/api/v1/parse", {
+                        body: JSON.stringify(body),
+                        headers: {
+                            Authorization: `Bearer ${this.jpdbToken}`
+                        },
+                        method: "POST"
+                    }).then(r => r.json()).then(body => {
+                        const normalized = body.vocabulary.join('');
+                        if (confirm(`normalize to "${normalized}"?`)) {
+                            window.postMessage(`normalizeYomichanHistory:--${item.text}--++${normalized}++`);
+                            this.selectedItem.text = normalized;
+                        }
+                    })
+                },
+                deleteData() {
+                    if (confirm('This action will delete the entire lookup history. Are you sure?')) {
+                        window.postMessage('resetYomichanHistory');
+                        this.lookups = [];
+                    }
+                },
+                async showDetails(item) {
+                    try {
+                        this.isExampleSentencesLoading = true;
+                        this.selectedItem = item;
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        const example = await this.findExampleSentences(item);
+                        // check because the selected item may have changed
+                        if (example.text === this.selectedItem.text) {
+                            this.exampleSentences = example.sentences;
+                        }
+                    } finally {
+                        this.isExampleSentencesLoading = false
+                    }
+                },
+                deselectItem() {
+                    this.selectedItem = null;
+                    this.exampleSentences = [];
+                    this.isExampleSentencesLoading = false;
+                }
+            },
+            computed: {
+                filteredItems() {
+                    const doSearchSource = this.searchSource.length > 0;
+                    const doSearchQuery = this.searchQuery.length > 0;
+                    const doSearchDate = this.searchDate.length > 0;
+                    if (!doSearchSource && !doSearchQuery && !doSearchDate) {
+                        return [];
+                    }
+
+                    const now = new Date();
+                    let minimumDate;
+                    if (doSearchDate) {
+                        const selectedDateSearch = this.dateValues.find(d => d.value === this.searchDate);
+                        minimumDate = now.setDate(now.getDate() - selectedDateSearch.days);
+                    }
+
+                    const filteredLookups = this.lookups.reduce((acc, lookup) => {
+                        let isMatch = false;
+                        if (doSearchSource) {
+                            isMatch = lookup.sources.has(this.searchSource);
+                            if (!isMatch) {
+                                return acc;
+                            }
+                        }
+
+                        if (doSearchDate) {
+                            isMatch = lookup.creationDates.find((d) => d >= minimumDate);
+                            if (!isMatch) {
+                                return acc;
+                            }
+                        }
+
+                        if (doSearchQuery) {
+                            isMatch = lookup.text.indexOf(this.searchQuery) > -1;
+                            if (!isMatch) {
+                                return acc;
+                            }
+                        }
+
+                        if (isMatch) {
+                            const now = new Date();
+                            const selectedDateSearch = this.dateValues.find(d => d.value === this.searchDate);
+                            const minimumDate = now.setDate(now.getDate() - selectedDateSearch.days);
+                            lookup.amount = lookup.creationDates.reduce((sum, date) => {
+                                if (date >= minimumDate) {
+                                    return sum + 1;
+                                }
+                                return sum;
+                            }, 0);
+                            acc.push(lookup);
+                        }
+
+                        return acc;
+                    }, []);
+
+                    filteredLookups.sort(sortLookups);
+                    return filteredLookups;
+                }
+            },
+            mounted() {
+                window.hydrate = (function (data) {
+                    // only hydrate once
+                    if (this.isHydrated) {
+                        return;
+                    }
+                    this.isHydrated = true;
+                    this.sources = data.sources;
+                    let groupedLookups = data.lookups.reduce((acc, lookup) => {
+                        const index = acc.findIndex(l => l.text === lookup.text);
+                        const source = data.sources[lookup.sourceId]?.label;
+                        if (index === -1) {
+                            acc.push({
+                                text: lookup.text,
+                                amount: 1,
+                                sources: (source || '').trim().length > 0 ? new Set([source]) : new Set([]),
+                                creationDates: [lookup.created]
+                            });
+                        } else {
+                            acc[index].amount++;
+                            acc[index].sources.add(source);
+                            acc[index].creationDates.push(lookup.created);
+                        }
+
+                        return acc;
+                    }, []);
+                    groupedLookups.sort(sortLookups);
+                    this.lookups = groupedLookups.slice(0, 1000);
+                }).bind(this);
+            }
+        }).mount('#app');
+
+        function sortLookups(a, b) {
+            if (a.amount > b.amount) {
+                return -1;
+            }
+
+            if (a.amount < b.amount) {
+                return 1;
+            }
+
+            return 0;
+        }
+    </script>
+</body>
+
+</html>

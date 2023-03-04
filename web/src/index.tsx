@@ -1,14 +1,16 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.css';
 import App from './App';
 import '@picocss/pico';
+import './index.css';
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 root.render(
+  // Double invokes of useEffect come from strict mode
+  // https://reactjs.org/docs/strict-mode.html#detecting-unexpected-side-effects
   <React.StrictMode>
     <App />
   </React.StrictMode>

@@ -1,17 +1,21 @@
 import React from 'react';
 import { HistoryItem } from "./models/hydration-item";
 
-export function LookupOverview({ lookups }: { lookups: HistoryItem[] }) {
+type OnClick = (item: HistoryItem) => void;
+
+export function LookupOverview({ lookups, onClick }: { lookups: HistoryItem[], onClick: OnClick }) {
     return (
         <div className="card-grid">
-            {lookups.map(lookup => <LookupOverviewItem key={lookup.text} lookup={lookup} />)}
+            {lookups.map(lookup => <LookupOverviewItem key={lookup.text} lookup={lookup} onClick={onClick} />)}
         </div>
     )
 }
 
-function LookupOverviewItem({ lookup }: { lookup: HistoryItem }) {
+function LookupOverviewItem({ lookup, onClick }: { lookup: HistoryItem, onClick: OnClick }) {
     return (
-        <div className="card-grid-item">
+        <div className="card-grid-item" onClick={() => {
+            onClick(lookup)
+        }}>
             <div className="card-grid-item-contents">
                 {lookup.text}:{lookup.amount}
             </div>

@@ -7,7 +7,9 @@ import { OverviewFilters } from './overview-filters';
 import { HistoryItem, HistoryItemSource } from './models/hydration-item';
 import { filterLookups } from './store/filter';
 import { DateQueryValue, dateQueryValues, dateQueryValueWeek } from './models/date-query-values';
+import LookupDetails from './lookup-details';
 
+const selectedItemAtom = atom<HistoryItem | null>(null);
 const queryParamsAtom = atom<{
   source: HistoryItemSource | null,
   text: string,
@@ -38,6 +40,7 @@ const filteredItemAtom = atom((get) => {
 function App() {
   const items = useAtomValue(filteredItemAtom);
   const setLookups = useSetAtom(lookupsAtom);
+  const [selectedItem, setSelectedItem] = useAtom(selectedItemAtom);
   const [queryParams, setQueryParams] = useAtom(queryParamsAtom);
   useEffect(() => {
     getHistoryItemsFromExtension().then((response) => {
@@ -50,6 +53,16 @@ function App() {
   }
 
   const { lookups, sources } = items;
+
+  if (selectedItem) {
+    return (
+      <div className='container'>
+        <LookupDetails selectedItem={selectedItem} goBack={() => {
+          setSelectedItem(null);
+        }} />
+      </div>); 
+  }
+
   return (
     <main className='container'>
       <div className='header'>
@@ -75,7 +88,9 @@ function App() {
           </div>
         </details>
 
-        <LookupOverview lookups={lookups} />
+        <LookupOverview lookups={lookups} onClick={(item) => {
+          setSelectedItem(item)
+        }} />
       </div >
     </main >
   );

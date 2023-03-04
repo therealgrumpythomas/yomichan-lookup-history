@@ -33,9 +33,16 @@ function App() {
           onDelete={(item) => {
             if (confirm(`Delete all entries with the text ${item.text}?`)) {
               window.postMessage(`deleteYomichanHistoryItem:${item.text}`);
-              setQueryParams({...queryParams, deleted: [...queryParams.deleted, item.text]});
+              setQueryParams({ ...queryParams, deleted: [...queryParams.deleted, item.text] });
               setSelectedItem(null);
-          }
+            }
+          }}
+          onEdit={(item, newText) => {
+            window.postMessage(`normalizeYomichanHistory:--${item.text}--++${newText}++`);
+            setSelectedItem({
+              ...selectedItem,
+              text: newText
+            });
           }}
           goBack={() => {
             setSelectedItem(null);

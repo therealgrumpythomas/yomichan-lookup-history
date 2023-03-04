@@ -1,57 +1,7 @@
-import { atom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import React, { useEffect } from 'react';
-import { HistoryItem } from './models/hydration-item';
-import * as DOMPurify from 'dompurify';
-
-interface Example {
-    text: string,
-    sentences: ExampleSentence[],
-    state: 'error' | 'hasData' | 'loading'
-}
-
-interface ExampleSentence {
-    source: {
-        title: string,
-        url: string
-    },
-    text: string,
-    markup: string
-}
-
-const examplesAtom = atom<Example>({
-    text: '',
-    sentences: [],
-    state: 'loading'
-});
-
-const fetchExamplesAtom = atom(
-    null,
-    async (_get, set, text: string) => {
-        set(examplesAtom, {
-            state: 'loading',
-            text,
-            sentences: []
-        });
-
-        const response = await fetch(`https://massif.la/ja/search?q=${text}&fmt=json`);
-        const body = await response.json();
-        set(examplesAtom, {
-            state: 'hasData',
-            text: text,
-            sentences: body.results.slice(0, 11).reduce((acc: ExampleSentence[], result: any) => {
-                acc.push({
-                    source: {
-                        title: result.sample_source.title,
-                        url: result.sample_source.url
-                    },
-                    text: result.text,
-                    markup: DOMPurify.sanitize(result.highlighted_html)
-                });
-                return acc;
-            }, [])
-        });
-    }
-)
+import { Example, HistoryItem } from './models/models';
+import { examplesAtom, fetchExamplesAtom } from './store/atom';
 
 interface Props {
     selectedItem: HistoryItem,
@@ -63,6 +13,7 @@ function LookupDetails({ selectedItem, goBack }: Props) {
     const fetchData = useSetAtom(fetchExamplesAtom);
     useEffect(() => {
         fetchData(selectedItem.text);
+        window.scrollTo({top: 0, behavior: 'smooth'});
     }, [fetchData, selectedItem]);
     console.log(data);
     return (

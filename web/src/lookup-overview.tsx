@@ -1,5 +1,5 @@
 import React from 'react';
-import { HistoryItem } from "./models/hydration-item";
+import { HistoryItem } from './models/models';
 
 type OnClick = (item: HistoryItem) => void;
 

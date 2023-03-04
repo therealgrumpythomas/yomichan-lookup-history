@@ -27,4 +27,30 @@ export const dateQueryValues: DateQueryValue[] = [
         value: 'year',
         days: 365
     },
-]
+];
+
+export interface HistoryItem {
+    text: string,
+    amount: number,
+    sources: Set<string>,
+    creationDates: number[]
+}
+
+export interface HistoryItemSource {
+    label: string
+}
+
+export interface Example {
+    text: string,
+    sentences: ExampleSentence[],
+    state: 'error' | 'hasData' | 'loading'
+}
+
+export interface ExampleSentence {
+    source: {
+        title: string,
+        url: string
+    },
+    text: string,
+    markup: string
+}

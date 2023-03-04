@@ -1,6 +1,5 @@
 import React from 'react';
-import { DateQueryValue } from './models/date-query-values';
-import { HistoryItemSource } from './models/hydration-item';
+import { DateQueryValue, HistoryItemSource } from './models/models';
 
 interface Props {
     activeSource: HistoryItemSource | null,

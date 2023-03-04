@@ -1,4 +1,4 @@
-import { HistoryItem, HistoryItemSource } from "../models/hydration-item";
+import { HistoryItem, HistoryItemSource } from "../models/models";
 
 interface ReturnType {
     lookups: HistoryItem[],

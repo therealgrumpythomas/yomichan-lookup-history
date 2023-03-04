@@ -1,41 +1,14 @@
 import React, { useEffect } from 'react';
 import './App.css';
-import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { getHistoryItemsFromExtension } from './store/hydration';
 import { LookupOverview } from './lookup-overview';
 import { OverviewFilters } from './overview-filters';
-import { HistoryItem, HistoryItemSource } from './models/hydration-item';
-import { filterLookups } from './store/filter';
-import { DateQueryValue, dateQueryValues, dateQueryValueWeek } from './models/date-query-values';
 import LookupDetails from './lookup-details';
+import { filteredItemAtom, lookupsAtom, queryParamsAtom, selectedItemAtom } from './store/atom';
+import { dateQueryValues } from './models/models';
 
-const selectedItemAtom = atom<HistoryItem | null>(null);
-const queryParamsAtom = atom<{
-  source: HistoryItemSource | null,
-  text: string,
-  date: DateQueryValue
-}>({
-  source: null,
-  text: '',
-  date: dateQueryValueWeek
-});
 
-const lookupsAtom = atom<{ lookups: HistoryItem[], sources: HistoryItemSource[] } | null>(null);
-const filteredItemAtom = atom((get) => {
-  const result = get(lookupsAtom);
-  const params = get(queryParamsAtom);
-  if (!result) {
-    return null;
-  }
-
-  const lookups = filterLookups(result.lookups,
-    {
-      dateQuery: params.date,
-      sourceQuery: params.source ? params.source.label : null,
-      textQuery: params.text
-    });
-  return { lookups, sources: result.sources };
-});
 
 function App() {
   const items = useAtomValue(filteredItemAtom);

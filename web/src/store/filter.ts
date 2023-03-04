@@ -1,5 +1,4 @@
-import { DateQueryValue, dateQueryValues } from "../models/date-query-values";
-import { HistoryItem } from "../models/hydration-item";
+import { DateQueryValue, HistoryItem } from "../models/models";
 
 interface FilterLookupsParams {
     sourceQuery?: string | null,

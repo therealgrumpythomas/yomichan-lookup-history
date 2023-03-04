@@ -5,17 +5,17 @@ import { examplesAtom, fetchExamplesAtom } from './store/atom';
 
 interface Props {
     selectedItem: HistoryItem,
-    goBack: Function
+    goBack: Function,
+    onDelete: (item: HistoryItem) => void
 }
 
-function LookupDetails({ selectedItem, goBack }: Props) {
+function LookupDetails({ selectedItem, goBack, onDelete }: Props) {
     const data = useAtomValue(examplesAtom);
     const fetchData = useSetAtom(fetchExamplesAtom);
     useEffect(() => {
         fetchData(selectedItem.text);
         window.scrollTo({top: 0, behavior: 'smooth'});
     }, [fetchData, selectedItem]);
-    console.log(data);
     return (
         <div>
             <div>
@@ -40,8 +40,8 @@ function LookupDetails({ selectedItem, goBack }: Props) {
             </article>
 
 
-            <button className="secondary">Normalize using jpdb</button>
-            <button className="secondary">Delete</button>
+            {/* <button className="secondary">Normalize using jpdb</button> */}
+            <button className="secondary" onClick={() => onDelete(selectedItem)}>Delete</button>
         </div>
     );
 }

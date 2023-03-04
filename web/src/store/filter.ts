@@ -3,7 +3,8 @@ import { DateQueryValue, HistoryItem } from "../models/models";
 interface FilterLookupsParams {
     sourceQuery?: string | null,
     dateQuery: DateQueryValue,
-    textQuery?: string
+    textQuery?: string,
+    deleted: string[]
 }
 
 export function filterLookups(lookups: HistoryItem[], params: FilterLookupsParams) {
@@ -14,6 +15,10 @@ export function filterLookups(lookups: HistoryItem[], params: FilterLookupsParam
 
     const filteredLookups = lookups.reduce<HistoryItem[]>((acc, lookup) => {
         let isMatch = false;
+        if (params.deleted.indexOf(lookup.text) > -1) {
+            return acc;
+        }
+
         if (doSearchSource && params.sourceQuery) {
             isMatch = lookup.sources.has(params.sourceQuery);
             if (!isMatch) {

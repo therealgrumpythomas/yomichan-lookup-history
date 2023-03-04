@@ -8,8 +8,6 @@ import LookupDetails from './lookup-details';
 import { filteredItemAtom, lookupsAtom, queryParamsAtom, selectedItemAtom } from './store/atom';
 import { dateQueryValues } from './models/models';
 
-
-
 function App() {
   const items = useAtomValue(filteredItemAtom);
   const setLookups = useSetAtom(lookupsAtom);
@@ -30,10 +28,19 @@ function App() {
   if (selectedItem) {
     return (
       <div className='container'>
-        <LookupDetails selectedItem={selectedItem} goBack={() => {
-          setSelectedItem(null);
-        }} />
-      </div>); 
+        <LookupDetails
+          selectedItem={selectedItem}
+          onDelete={(item) => {
+            if (confirm(`Delete all entries with the text ${item.text}?`)) {
+              window.postMessage(`deleteYomichanHistoryItem:${item.text}`);
+              setQueryParams({...queryParams, deleted: [...queryParams.deleted, item.text]});
+              setSelectedItem(null);
+          }
+          }}
+          goBack={() => {
+            setSelectedItem(null);
+          }} />
+      </div>);
   }
 
   return (
@@ -49,7 +56,8 @@ function App() {
             setQueryParams({
               source: newActiveSource,
               date: newDate,
-              text: newText
+              text: newText,
+              deleted: []
             });
           }} />
 

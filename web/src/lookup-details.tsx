@@ -1,7 +1,5 @@
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import React, { useEffect } from 'react';
-import { Example, HistoryItem } from './models/models';
-import { examplesAtom, fetchExamplesAtom } from './store/atom';
+import React from 'react';
+import { HistoryItem } from './models/models';
 
 interface Props {
     selectedItem: HistoryItem,
@@ -11,12 +9,6 @@ interface Props {
 }
 
 function LookupDetails({ selectedItem, goBack, onDelete, onEdit }: Props) {
-    const data = useAtomValue(examplesAtom);
-    const fetchData = useSetAtom(fetchExamplesAtom);
-    useEffect(() => {
-        fetchData(selectedItem.text);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, [fetchData, selectedItem]);
     return (
         <div>
             <div>
@@ -25,12 +17,12 @@ function LookupDetails({ selectedItem, goBack, onDelete, onEdit }: Props) {
             <article id="example-sentences">
                 <hgroup>
                     <h2>{selectedItem.text}</h2>
-                    <Subtitle example={data} />
+                    <Subtitle item={selectedItem} />
                 </hgroup>
 
-                <Sentences example={data} />
+                <Sentences item={selectedItem} />
                 <Sources item={selectedItem} />
-            </article >
+            </article>
 
             {/* <button className="secondary">Normalize using jpdb</button> */}
             <button className="secondary" onClick={() => {
@@ -52,35 +44,39 @@ function LookupDetails({ selectedItem, goBack, onDelete, onEdit }: Props) {
 }
 
 interface SubtitleProps {
-    example: Example
+    item: HistoryItem
 }
-const Subtitle = ({ example }: SubtitleProps) => {
-    if (example.state === 'loading') {
+const Subtitle = ({ item }: SubtitleProps) => {
+    if (!item.sentences) {
         return <h3 aria-busy="true"></h3>;
     }
 
-    if (example.state === 'error') {
-        return <h3></h3>
+    if (item.sentences.size > 0) {
+        const iterator = item.sentences.values();
+        const sentence = iterator.next();
+        if (sentence.value.length > 0) {
+            return <h3 dangerouslySetInnerHTML={{ __html: sentence.value }}></h3>
+        }
     }
 
-    if (example.sentences.length > 0 && example.sentences[0]) {
-        return <h3 dangerouslySetInnerHTML={{ __html: example.sentences[0].markup }}>{ }</h3>
-    }
-
-    return <h3>No example sentences found</h3>
+    return <h3>No sentences found</h3>
 }
 
 interface SentencesProps {
-    example: Example
+    item: HistoryItem
 }
-const Sentences = ({ example }: SentencesProps) => {
-    const sentences = example.sentences.slice(1);
+const Sentences = ({ item }: SentencesProps) => {
+    const sentences = Array.from(item.sentences).slice(1);
+    if (sentences.length === 0) {
+        return <></>
+    }
+
     return (
         <div>
             <details>
                 <summary>Show {sentences.length} more sentences</summary>
                 <ul>
-                    {sentences.map((s, i) => (<li key={i} dangerouslySetInnerHTML={{ __html: s.markup }}></li>))}
+                    {sentences.map((s, i) => (<li key={i} dangerouslySetInnerHTML={{ __html: s }}></li>))}
                 </ul>
             </details>
         </div>

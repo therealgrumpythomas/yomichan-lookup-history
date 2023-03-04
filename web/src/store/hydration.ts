@@ -14,17 +14,25 @@ export async function getHistoryItemsFromExtension() {
         window.hydrate = (function (data: any) {
             let groupedLookups = data.lookups.reduce((acc: any, lookup: any) => {
                 const index = acc.findIndex((l: any) => l.text === lookup.text);
-                const source = data.sources[lookup.sourceId] ? data.sources[lookup.sourceId].label : "";
+                const source = data.sources[lookup.sourceId] ? data.sources[lookup.sourceId].label : ""
+                const sentence = (lookup.sentence || '').trim();
                 if (index === -1) {
                     acc.push({
                         text: lookup.text,
                         amount: 1,
                         sources: (source || '').trim().length > 0 ? new Set([source]) : new Set([]),
+                        sentences: sentence.length > 0 ? new Set([sentence]) : new Set([]),
                         creationDates: [lookup.created]
                     });
                 } else {
                     acc[index].amount++;
-                    acc[index].sources.add(source);
+                    if (source) {
+                        acc[index].sources.add(source);
+                    }
+                    if (sentence.length > 0) {
+                        acc[index].sentences.add(lookup.sentence);
+                    }
+
                     acc[index].creationDates.push(lookup.created);
                 }
 

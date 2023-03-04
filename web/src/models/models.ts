@@ -32,6 +32,7 @@ export const dateQueryValues: DateQueryValue[] = [
 export interface HistoryItem {
     text: string,
     amount: number,
+    sentences: Set<string>,
     sources: Set<string>,
     creationDates: number[]
 }

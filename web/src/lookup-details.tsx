@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { HistoryItem } from './models/models';
+import * as DomPurify from 'dompurify';
 
 interface Props {
     selectedItem: HistoryItem,
@@ -69,7 +70,7 @@ const Subtitle = ({ item }: SubtitleProps) => {
         const iterator = item.sentences.values();
         const sentence = iterator.next();
         if (sentence.value.length > 0) {
-            return <h3 dangerouslySetInnerHTML={{ __html: sentence.value }}></h3>
+            return <h3 dangerouslySetInnerHTML={{ __html: DomPurify.sanitize(sentence.value) }}></h3>
         }
     }
 
@@ -90,7 +91,7 @@ const Sentences = ({ item }: SentencesProps) => {
             <details>
                 <summary>Show {sentences.length} more sentences</summary>
                 <ul>
-                    {sentences.map((s, i) => (<li key={i} dangerouslySetInnerHTML={{ __html: s }}></li>))}
+                    {sentences.map((s, i) => (<li key={i} dangerouslySetInnerHTML={{ __html: DomPurify.sanitize(s) }}></li>))}
                 </ul>
             </details>
         </div>

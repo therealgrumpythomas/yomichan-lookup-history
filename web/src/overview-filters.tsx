@@ -42,7 +42,7 @@ export function OverviewFilters({ activeSource, sources, dateQueryValues, active
                 <summary>More filter options</summary>
                 <label htmlFor="source">Source</label>
                 <select id="source" onChange={onChangeSource} defaultValue={activeSource ? activeSource.label : ''}>
-                    <option value="">All</option>
+                    <option value="">All sources</option>
                     {sources.map(source => <option key={source.label} value={source.label}>{source.label}</option>)}
                 </select>
             </details>

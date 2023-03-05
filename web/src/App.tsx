@@ -27,7 +27,6 @@ function App() {
 
   if (selectedItem) {
     return (
-      <div className='container'>
         <LookupDetails
           selectedItem={selectedItem}
           onDelete={(item) => {
@@ -46,12 +45,10 @@ function App() {
           }}
           goBack={() => {
             setSelectedItem(null);
-          }} />
-      </div>);
+          }} />);
   }
 
   return (
-    <main className='container'>
       <div className='header'>
         <OverviewFilters
           activeSource={queryParams.source}
@@ -83,7 +80,6 @@ function App() {
           }} />
         </div>
       </div >
-    </main >
   );
 }
 interface LoadMoreProps {

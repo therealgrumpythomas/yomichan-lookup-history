@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { HistoryItem } from './models/models';
 
 interface Props {
@@ -9,6 +9,9 @@ interface Props {
 }
 
 function LookupDetails({ selectedItem, goBack, onDelete, onEdit }: Props) {
+    useEffect(() => {
+        window.scrollTo({top:0, behavior: 'auto'});
+    }, [])
     return (
         <div>
             <div>
@@ -28,8 +31,10 @@ function LookupDetails({ selectedItem, goBack, onDelete, onEdit }: Props) {
                     <li>
                         <a href={`https://jpdb.io/search?q=${selectedItem.text}&lang=english#a`} target="_blank">jpdb</a>
                     </li>
+                    <li>
+                        <a href={`https://massif.la/ja/search?q=${selectedItem.text}`} target="_blank">More example sentences</a>
+                    </li>
                 </ul>
-            </article>
 
             {/* <button className="secondary">Normalize using jpdb</button> */}
             <button className="secondary" onClick={() => {
@@ -46,6 +51,8 @@ function LookupDetails({ selectedItem, goBack, onDelete, onEdit }: Props) {
                 onEdit(selectedItem, text);
             }}>Edit</button>
             <button className="secondary" onClick={() => onDelete(selectedItem)}>Delete</button>
+            </article>
+
         </div >
     );
 }
@@ -97,7 +104,7 @@ interface SourcesProps {
 const Sources = ({ item }: SourcesProps) => {
     const sources = Array.from(item.sources);
     return (
-        <details open={true}>
+        <details open={false}>
             <summary>Show {sources.length} sources</summary>
             <ul>
                 {

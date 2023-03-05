@@ -44,6 +44,10 @@
   width: 100%;
 }
 
+#example-sentences {
+  margin-top: 0;
+}
+
 #example-sentences em {
   font-weight: bold;
   font-style: normal;

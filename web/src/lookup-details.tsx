@@ -22,6 +22,13 @@ function LookupDetails({ selectedItem, goBack, onDelete, onEdit }: Props) {
 
                 <Sentences item={selectedItem} />
                 <Sources item={selectedItem} />
+
+                <h3>Links</h3>
+                <ul>
+                    <li>
+                        <a href={`https://jpdb.io/search?q=${selectedItem.text}&lang=english#a`} target="_blank">jpdb</a>
+                    </li>
+                </ul>
             </article>
 
             {/* <button className="secondary">Normalize using jpdb</button> */}

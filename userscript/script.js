@@ -5,7 +5,7 @@
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
-// @version     9.0
+// @version     10.0
 // @license MIT
 // @author      grumpythomas
 // @description 15/02/2023, 20:13:58
@@ -93,6 +93,10 @@ function run() {
     let sentence = getSelectionMore.getSentenceFromSelection(window.getSelection());
     if (sentence && sentence.length >= maxSentenceSize) {
       sentence = undefined;
+    }
+
+    if (sentence) {
+      sentence = sentence.replaceAll(selectedText, '<em>' + selectedText + '</em>');
     }
     insertRow(selectedText, document.title, sentence);
   }, 600));

@@ -4,7 +4,8 @@ interface FilterLookupsParams {
     sourceQuery?: string | null,
     dateQuery: DateQueryValue,
     textQuery?: string,
-    deleted: string[]
+    deleted: string[],
+    range: [number, number]
 }
 
 export function filterLookups(lookups: HistoryItem[], params: FilterLookupsParams) {
@@ -55,7 +56,10 @@ export function filterLookups(lookups: HistoryItem[], params: FilterLookupsParam
     }, []);
 
     filteredLookups.sort(sortLookups);
-    return filteredLookups;
+    return {
+        lookups: filteredLookups.slice(Math.min(...params.range), Math.max(...params.range)),
+        total: filteredLookups.length
+    };
 }
 
 function sortLookups(a: HistoryItem, b: HistoryItem) {

@@ -5,7 +5,7 @@ import { getHistoryItemsFromExtension } from './store/hydration';
 import { LookupOverview } from './lookup-overview';
 import { OverviewFilters } from './overview-filters';
 import LookupDetails from './lookup-details';
-import { filteredItemAtom, lookupsAtom, queryParamsAtom, selectedItemAtom } from './store/atom';
+import { filteredItemAtom, lookupsAtom, queryParamsAtom, selectedItemAtom, QueryParams } from './store/atom';
 import { dateQueryValues } from './models/models';
 
 function App() {
@@ -23,7 +23,7 @@ function App() {
     return <></>;
   }
 
-  const { lookups, sources } = items;
+  const { lookups, sources, totalLookups } = items;
 
   if (selectedItem) {
     return (
@@ -61,18 +61,50 @@ function App() {
           textQuery={queryParams.text}
           onChange={(newActiveSource, newDate, newText) => {
             setQueryParams({
+              ...queryParams,
               source: newActiveSource,
               date: newDate,
               text: newText,
-              deleted: []
+              deleted: [],
+              // reset range on any changes
+              range: [0, queryParams.rangeStepSize]
             });
           }} />
 
         <LookupOverview lookups={lookups} onClick={(item) => {
           setSelectedItem(item)
         }} />
+        <div>
+          <LoadMore totalLookups={totalLookups} queryParams={queryParams} onLoadMore={() => {
+            setQueryParams({
+              ...queryParams,
+              range: [0, queryParams.range[1] + queryParams.rangeStepSize]
+            });
+          }} />
+        </div>
       </div >
     </main >
+  );
+}
+interface LoadMoreProps {
+  queryParams: QueryParams,
+  onLoadMore: Function,
+  totalLookups: number
+}
+const LoadMore = (props: LoadMoreProps) => {
+  const shown = Math.max(...props.queryParams.range);
+  const leftOverCount = props.totalLookups - shown;
+  if (leftOverCount <= 0) {
+    return <></>;
+  }
+
+  let message = `Load ${props.queryParams.rangeStepSize} more`;
+  if (leftOverCount < props.queryParams.rangeStepSize) {
+    message = `Load remaining ${leftOverCount}`;
+  }
+
+  return (
+    <button className='secondary' onClick={() => props.onLoadMore()}>{message}</button>
   );
 }
 

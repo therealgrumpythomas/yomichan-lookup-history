@@ -6,12 +6,23 @@ interface ReturnType {
 }
 
 declare global {
-    interface Window { hydrate: any; }
+    interface Window { getLookups?(): any[] }
 }
 
 export async function getHistoryItemsFromExtension() {
     return await new Promise<ReturnType>((resolve, reject) => {
-        window.hydrate = (function (data: any) {
+        if (window.getLookups) {
+            hydrate(window.getLookups());
+        } else {
+            const hydrationInterval = window.setInterval(() => {
+                if (window.getLookups) {
+                    window.clearInterval(hydrationInterval);
+                    hydrate(window.getLookups());
+                }
+            }, 200);
+        }
+
+        function hydrate(data: any) {
             let groupedLookups = data.lookups.reduce((acc: any, lookup: any) => {
                 const index = acc.findIndex((l: any) => l.text === lookup.text);
                 const source = data.sources[lookup.sourceId] ? data.sources[lookup.sourceId].label : ""
@@ -41,7 +52,7 @@ export async function getHistoryItemsFromExtension() {
             groupedLookups.sort(sortLookups);
             const lookups = groupedLookups.slice(0, 1000);
             resolve({ lookups, sources: data.sources });
-        });
+        }
     });
 }
 

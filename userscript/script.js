@@ -12,21 +12,37 @@
 // @require https://cdn.jsdelivr.net/npm/get-selection-more@1.1.0/dist/get-selection-more.umd.js
 // ==/UserScript==
 const dbKey = 'yomichan-lookup-history';
-const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const maxTextSize = 24;
 const maxSentenceSize = 58;
-function run() {
+function isTrusted() {
   const host = window.location.host;
-  if (host.indexOf('localhost') > -1 || host.indexOf('therealgrumpythomas') > -1) {
-    let hydrateInterval = window.setInterval(() => {
-      if (unsafeWindow.hydrate) {
-        unsafeWindow.hydrate(getData());
-        unsafeWindow.clearInterval(hydrateInterval);
-      }
-    }, 100);
+  if (host === 'therealgrumpythomas.github.io') {
+    return true;
+  }
+
+  if (host.startsWith('localhost:')) {
+    return true;
+  }
+
+  return false;
+}
+
+function run() {
+  if (isTrusted()) {
+    unsafeWindow.getLookups = function () {
+      return getData();
+    }
+
+    unsafeWindow.importLookups = function (data) {
+      setData(data);
+    }
   }
 
   window.addEventListener('message', function (e) {
+    if (!isTrusted()) {
+      return;
+    }
+
     if (e.data === 'resetYomichanHistory') {
       GM_deleteValue(dbKey);
     }
@@ -53,6 +69,7 @@ function run() {
         data.lookups = data.lookups.reduce((acc, lookup) => {
           if (lookup.text === before) {
             lookup.text = after;
+            lookup.updated = Date.now();
           }
 
           acc.push(lookup);
@@ -132,7 +149,11 @@ function insertRow(lookup, source, sentence) {
     return;
   }
 
-  const dbLookup = { text: lookup, created: Date.now(), timezone };
+  const dbLookup = {
+    text: lookup,
+    created: Date.now(),
+    updated: undefined
+  };
   let dbSourceId = data.sources.findIndex(s => s.label === source);
   if (dbSourceId === -1) {
     dbSourceId = data.sources.push({ label: source })
@@ -163,6 +184,10 @@ function containsJapanese(text) {
   }
 
   return text.match(/[\u0100-\uffff]+/) !== null;
+}
+
+function mergeImport(oldData, newData) {
+
 }
 
 // testing

@@ -5,7 +5,7 @@
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
-// @version     10.0
+// @version     11.0
 // @license MIT
 // @author      grumpythomas
 // @description 15/02/2023, 20:13:58
